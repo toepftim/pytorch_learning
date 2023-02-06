@@ -1,20 +1,22 @@
 import torch
+import numpy as np
 
 from model import Net
 import prepare_dataset
+from custom_loss import custom_loss
 
 
-dataset_size = 10000
-batch_size = 1
-iterations = 2
+dataset_size = 100000
+batch_size = 100
+iterations = 10
 
 
 train_data = prepare_dataset.make_random_data(dataset_size)
 train_labels = prepare_dataset.get_labels(train_data)
 
 net = Net()
-criterion = torch.nn.MSELoss()
-optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+criterion = custom_loss
+optimizer = torch.optim.SGD(net.parameters(), lr=0.005, momentum=0.8)
 
 for epoch in range(iterations):
     running_loss = 0.
