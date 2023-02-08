@@ -1,0 +1,5 @@
+manif/
+.idea
+__pycache__/
+trained.pth
+*.png

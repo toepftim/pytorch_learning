@@ -1,19 +1,27 @@
 import torch
 import torch.nn.functional as F
-import numpy as np
 
 
 class Net(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.fc1 = torch.nn.Linear(6, 4)
+        self.fc1 = torch.nn.Linear(4, 50)
+        self.fc2 = torch.nn.Linear(50, 4)
 
     def forward(self, x):
-        angles = x[:, 2:3]
-        sins = np.sin(angles.numpy())
-        coses = np.cos(angles.numpy())
-        x = torch.concat((x, torch.from_numpy(sins), torch.from_numpy(coses), torch.ones(*sins.shape)), 1)
-        x = self.fc1(x)
-        out_angles = torch.atan2(F.softsign(x[:, 2:3]), F.softsign(x[:, 3:4]))
-        x = torch.concat((x[:, :2], out_angles), 1)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        x = torch.cat((x[:, :2], F.hardtanh(x[:, 2:4])), 1)
         return x
+
+
+def xydeg2xysincos(deg_input: torch.Tensor):
+    angles = deg_input[:, 2:3]
+    sins = torch.sin(angles)
+    coses = torch.cos(angles)
+    return torch.cat((deg_input[:, :2], sins, coses), 1)
+
+
+def xysincos2xydeg(sincos_output: torch.Tensor):
+    out_angles = torch.atan2(sincos_output[:, 2:3], sincos_output[:, 3:4])
+    return torch.cat((sincos_output[:, :2], out_angles), 1)

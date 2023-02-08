@@ -4,18 +4,19 @@ import numpy as np
 
 def griper_position(box_position):
     b = SE2(*box_position)
-    rot = SE2(0, 0, np.pi)
+    rot_angle = 0 if box_position[2] >= 0 else np.pi
+    rot = SE2(0, 0, rot_angle)
     t = SE2(-1, 0, 0)
     g = (b*rot)*t
     return g.x(), g.y(), g.angle()
 
 
 def make_random_data(n: int) -> np.ndarray:
-    data = np.random.rand(n, 3).astype(np.float32)
-    data[:, :2] *= 10
-    data[:, 2] -= 0.5
-    data[:, 2] *= 2*np.pi
-    return data
+    random_data = np.random.rand(n, 3).astype(np.float32)
+    random_data[:, :2] *= 10
+    random_data[:, 2] -= 0.5
+    random_data[:, 2] *= 2*np.pi
+    return random_data
 
 
 def get_labels(data: np.ndarray):
@@ -40,4 +41,3 @@ if __name__ == '__main__':
         ax.arrow(labels[i, 0], labels[i, 1], np.cos(labels[i, 2]), np.sin(labels[i, 2]), width=0.1, length_includes_head=True, color="gray")
     ax.set(xlim=(-1, 10), ylim=(-1, 10))
     plt.show()
-
