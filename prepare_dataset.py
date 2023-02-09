@@ -1,43 +1,57 @@
 from manifpy import SE2
 import numpy as np
 
+from visualize import visualize_prediction
 
-def griper_position(box_position):
+space_size = 7
+
+
+def griper_positions(box_position):
+    results = []
     b = SE2(*box_position)
-    rot_angle = 0 if box_position[2] >= 0 else np.pi
-    rot = SE2(0, 0, rot_angle)
-    t = SE2(-1, 0, 0)
-    g = (b*rot)*t
-    return g.x(), g.y(), g.angle()
+    for i in range(4):
+        rot_angle = (i/2)*np.pi
+        rot = SE2(0, 0, rot_angle)
+        t = SE2(-0.5, 0, 0)
+        g = (b*rot)*t
+        if 0.6 < g.x() < space_size - 0.6 and 0.6 < g.y() < space_size - 0.6:
+            results.append((g.x(), g.y(), g.angle()))
+    # if len(results) ==  1:
+    #     results *= 4
+    return results
 
 
 def make_random_data(n: int) -> np.ndarray:
     random_data = np.random.rand(n, 3).astype(np.float32)
-    random_data[:, :2] *= 10
+    random_data[:, :2] *= 3
+    random_data[:, :2] += 0.5
     random_data[:, 2] -= 0.5
     random_data[:, 2] *= 2*np.pi
     return random_data
 
 
-def get_labels(data: np.ndarray):
+def make_grid_data():
+    objs = np.array([(2*row+0.5, 2*col+0.5, 0) for row in range((space_size+1)//2) for col in range((space_size+1)//2)], np.float32)
+    return objs
+
+
+def get_data_and_labels(data: np.ndarray):
     n = data.shape[0]
-    labels = np.zeros(data.shape, np.float32)
+    new_data = []
+    labels = []
     for i in range(n):
-        labels[i, :] = griper_position(data[i, :])
-    return labels
+        for label in griper_positions(data[i, :]):
+            new_data.append(data[i, :])
+            labels.append(label)
+    return np.array(new_data, np.float32), np.array(labels, np.float32)
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    example_count = 10
-    data = make_random_data(example_count)
-    labels = get_labels(data)
-    print(data)
-    print(labels)
+    data = make_grid_data()
+    data, labels = get_data_and_labels(data)
 
     fig, ax = plt.subplots()
-    for i in range(example_count):
-        ax.arrow(data[i, 0], data[i, 1], np.cos(data[i, 2]), np.sin(data[i, 2]), width=0.1, length_includes_head=True, color="brown")
-        ax.arrow(labels[i, 0], labels[i, 1], np.cos(labels[i, 2]), np.sin(labels[i, 2]), width=0.1, length_includes_head=True, color="gray")
-    ax.set(xlim=(-1, 10), ylim=(-1, 10))
+    visualize_prediction(ax, data, correct_grippers=labels)
+    ax.set(xlim=(0, space_size), ylim=(0, space_size))
     plt.show()

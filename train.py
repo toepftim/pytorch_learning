@@ -1,21 +1,25 @@
+import numpy as np
 import torch
 
-from model import Net, xydeg2xysincos
+from model import Net, xyrad2xysincos
 import prepare_dataset
+from dataset_iterator import dataset_iterator
 
 
-dataset_size = 50000
-batch_size = 100
-iterations = 10
+epoch_len = 100
+batch_size = 40
+iterations = 200
 
 
-train_data = prepare_dataset.make_random_data(dataset_size)
-train_labels = prepare_dataset.get_labels(train_data)
+grid_data = prepare_dataset.make_grid_data()
+train_data, train_labels = prepare_dataset.get_data_and_labels(grid_data)
+
 
 train_data = torch.from_numpy(train_data)
-train_data = xydeg2xysincos(train_data)
+train_data = xyrad2xysincos(train_data)
 train_labels = torch.from_numpy(train_labels)
-train_labels = xydeg2xysincos(train_labels)
+train_labels = xyrad2xysincos(train_labels)
+
 
 net = Net()
 criterion = torch.nn.MSELoss()
@@ -23,9 +27,9 @@ optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
 
 for epoch in range(iterations):
     running_loss = 0.
-    for i in range(dataset_size//batch_size):
-        inputs = train_data[i*batch_size:(i+1)*batch_size]
-        labels = train_labels[i*batch_size:(i+1)*batch_size]
+    data_loader = dataset_iterator(input_data=train_data, label_data=train_labels, batch_size=batch_size)
+    for i in range(epoch_len):
+        inputs, labels = next(data_loader)
 
         optimizer.zero_grad()
         outputs = net(inputs)
@@ -34,8 +38,7 @@ for epoch in range(iterations):
         optimizer.step()
 
         running_loss += loss.item()
-        if i % 100 == 99:
-            print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 100:.3f}')
-            running_loss = 0.0
+
+    print(f'[{epoch + 1}] loss: {running_loss / epoch_len:.3f}')
 
 torch.save(net.state_dict(), "trained.pth")
